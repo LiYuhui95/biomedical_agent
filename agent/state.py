@@ -1,5 +1,17 @@
-from typing import List
+from typing import Any, List
 from pydantic import BaseModel, Field
+
+class AgentState(BaseModel):
+    question: str
+
+    plan: list[str] = Field(default_factory=list)
+    papers: list[PaperRecord] = Field(default_factory=list)
+    evidence: list[ScientificEvidence] = Field(default_factory=list)
+    completed_steps: list[str] = Field(default_factory=list)
+
+    reasoning_trace: list[str] = Field(default_factory=list)
+
+    final_answer: str | None = None
 
 
 class Evidence(BaseModel):
@@ -51,6 +63,53 @@ class AgentState(BaseModel):
     )
 
     completed_steps: list[str] = Field(
+        default_factory=list
+    )
+
+    final_answer: str | None = None
+
+class ToolResult(BaseModel):
+    """
+    The observation returned by a tool after an action is executed.
+    """
+
+    tool: str
+
+    success: bool
+
+    data: Any = None
+
+    error: str | None = None
+
+
+class AgentState(BaseModel):
+    """
+    Shared working memory of the agent.
+    """
+
+    question: str
+
+    plan: list[str] = Field(
+        default_factory=list
+    )
+
+    papers: list[PaperRecord] = Field(
+        default_factory=list
+    )
+
+    evidence: list[ScientificEvidence] = Field(
+        default_factory=list
+    )
+
+    completed_steps: list[str] = Field(
+        default_factory=list
+    )
+
+    tool_results: list[ToolResult] = Field(
+        default_factory=list
+    )
+
+    reasoning_trace: list[str] = Field(
         default_factory=list
     )
 

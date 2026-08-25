@@ -46,7 +46,7 @@ class BiomedicalAgent:
         print(f"DEBUG papers found: {len(papers)}")
         for p in papers:
             print(f"DEBUG  pmid={p.pmid} has_abstract={bool(p.abstract)}")
-            
+
         state.papers = papers
         state.completed_steps.append("retrieval")
 

@@ -47,44 +47,6 @@ def search_pubmed(
         "esearchresult"
     ]["idlist"]
 
-def fetch_pubmed_records(
-    pmids: list[str]
-) -> str:
-
-    if not pmids:
-        return ""
-
-    params = {
-        "db": "pubmed",
-        "id": ",".join(pmids),
-        "retmode": "xml",
-        "rettype": "abstract",
-
-        "tool": "biomedical-agent",
-        "email": "fake_email@123.com",
-    }
-
-    url = f"{BASE_URL}/efetch.fcgi"
-    try:
-
-        response = requests.get(
-            f"{BASE_URL}/efetch.fcgi",
-            params=params,
-            headers=HEADERS,
-            timeout=(10, 60),
-            proxies={"http": None, "https": None}
-        )
-
-        response.raise_for_status()
-
-        return response.text
-    
-    except requests.RequestException as e:
-
-        raise RuntimeError(
-            f"PubMed request failed: {e}"
-        ) from e
-
 def parse_pubmed_xml(
     xml_text: str
 ) -> list[PaperRecord]:
@@ -174,3 +136,41 @@ def parse_pubmed_xml(
         )
 
     return results
+
+def fetch_paper(
+    pmids: list[str]
+) -> list[PaperRecord]:
+
+    if not pmids:
+        return ""
+
+    params = {
+        "db": "pubmed",
+        "id": ",".join(pmids),
+        "retmode": "xml",
+        "rettype": "abstract",
+
+        "tool": "biomedical-agent",
+        "email": "fake_email@123.com",
+    }
+
+    url = f"{BASE_URL}/efetch.fcgi"
+    try:
+
+        response = requests.get(
+            url,
+            params=params,
+            headers=HEADERS,
+            timeout=(10, 60),
+            proxies={"http": None, "https": None}
+        )
+
+        response.raise_for_status()
+
+        return parse_pubmed_xml(response.text)
+    
+    except requests.RequestException as e:
+
+        raise RuntimeError(
+            f"PubMed request failed: {e}"
+        ) from e

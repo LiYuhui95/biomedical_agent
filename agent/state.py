@@ -1,19 +1,6 @@
 from typing import Any, List
 from pydantic import BaseModel, Field
 
-class AgentState(BaseModel):
-    question: str
-
-    plan: list[str] = Field(default_factory=list)
-    papers: list[PaperRecord] = Field(default_factory=list)
-    evidence: list[ScientificEvidence] = Field(default_factory=list)
-    completed_steps: list[str] = Field(default_factory=list)
-
-    reasoning_trace: list[str] = Field(default_factory=list)
-
-    final_answer: str | None = None
-
-
 class Evidence(BaseModel):
     pmid: str
     title: str
@@ -47,26 +34,16 @@ class ScientificEvidence(BaseModel):
     )
 
 
-class AgentState(BaseModel):
-    question: str
+class AgentAction(BaseModel):
+    """
+    The next action that the LLM wants the agent to take.
+    """
 
-    plan: list[str] = Field(
-        default_factory=list
+    action: str
+
+    arguments: dict[str, Any] = Field(
+        default_factory=dict
     )
-
-    papers: list[PaperRecord] = Field(
-        default_factory=list
-    )
-
-    evidence: list[ScientificEvidence] = Field(
-        default_factory=list
-    )
-
-    completed_steps: list[str] = Field(
-        default_factory=list
-    )
-
-    final_answer: str | None = None
 
 class ToolResult(BaseModel):
     """
@@ -109,6 +86,10 @@ class AgentState(BaseModel):
         default_factory=list
     )
 
+    actions: list[AgentAction] = Field(
+    default_factory=list
+    )
+    
     reasoning_trace: list[str] = Field(
         default_factory=list
     )

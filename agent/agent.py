@@ -1,9 +1,10 @@
-from agent.state import AgentState
+from agent.state import AgentState, AgentAction, ToolResult
 from agent.planner import create_plan
-from tools.pubmed import fetch_pubmed_records, parse_pubmed_xml, search_pubmed
+from tools.pubmed import fetch_paper, search_pubmed
 from agent.llm import LLMBackend, OllamaBackend
 from agent.extractor import extract_evidence
 from agent.query import rewrite_query
+from agent.tools import execute_tool
 
 class BiomedicalAgent:
     def __init__(self, llm: LLMBackend | None = None):
@@ -18,37 +19,126 @@ class BiomedicalAgent:
             question=question
         )
 
-        state.plan = create_plan(state)
+        # --------------------------------
+        # 1. Planning
+        # --------------------------------
 
-        search_query = rewrite_query(self.llm, question)
-        print(f"DEBUG search_query: {search_query!r}")
+        state.plan = create_plan(
+            state
+        )
+
+        # --------------------------------
+        # 2. Query rewrite
+        # --------------------------------
+
+        search_query = rewrite_query(
+            self.llm,
+            question
+        )
+
         if not search_query:
-            state.papers = []
-            state.completed_steps.append("retrieval")
-            state.evidence = []
-            state.final_answer = self._synthesize(state, 0.0)
-            state.completed_steps.append("synthesis")
+
+            state.completed_steps.append(
+                "query_rewrite"
+            )
+
+            state.final_answer = (
+                "No valid biomedical "
+                "search query could be generated."
+            )
+
             return state
-        
-        pmids = search_pubmed(
-            query=search_query,
-            retmax=5,
+
+        state.completed_steps.append(
+            "query_rewrite"
         )
 
-        xml = fetch_pubmed_records(
-            pmids
+        # --------------------------------
+        # 3. Search Tool
+        # --------------------------------
+
+        search_action = AgentAction(
+            action="search_pubmed",
+            arguments={
+                "query": search_query,
+                "retmax": 20,
+            },
         )
 
-        papers = parse_pubmed_xml(
-            xml
+        state.actions.append(
+            search_action
         )
 
-        print(f"DEBUG papers found: {len(papers)}")
-        for p in papers:
-            print(f"DEBUG  pmid={p.pmid} has_abstract={bool(p.abstract)}")
+        search_result = execute_tool(
+            search_action
+        )
+
+        state.tool_results.append(
+            search_result
+        )
+
+        if not search_result.success:
+
+            state.final_answer = (
+                "PubMed search failed: "
+                f"{search_result.error}"
+            )
+
+            return state
+
+        pmids = search_result.data
+
+        if not pmids:
+
+            state.final_answer = (
+                "No PubMed results found."
+            )
+
+            return state
+
+        # --------------------------------
+        # 4. Fetch papers
+        # --------------------------------
+
+        fetch_action = AgentAction(
+            action="fetch_paper",
+            arguments={
+                "pmids": pmids,
+            },
+        )
+
+        state.actions.append(
+            fetch_action
+        )
+
+        fetch_result = execute_tool(
+            fetch_action
+        )
+
+        state.tool_results.append(
+            fetch_result
+        )
+
+        if not fetch_result.success:
+
+            state.final_answer = (
+                "PubMed paper fetching failed: "
+                f"{fetch_result.error}"
+            )
+
+            return state
+
+        papers = fetch_result.data
 
         state.papers = papers
-        state.completed_steps.append("retrieval")
+
+        state.completed_steps.append(
+            "retrieval"
+        )
+
+        # --------------------------------
+        # 5. Evidence extraction
+        # --------------------------------
 
         evidence = []
 
@@ -67,28 +157,34 @@ class BiomedicalAgent:
             evidence.append(item)
 
         state.evidence = evidence
-        state.completed_steps.append("evaluation")
 
-        if state.evidence:
-            score = sum(
-                1.0 if item.supports_question else 0.0
-                for item in state.evidence
-            ) / len(state.evidence)
-        else:
-            score = 0.0
+        state.completed_steps.append(
+            "extraction"
+        )
 
-        state.final_answer = self._synthesize(state, score)
-        state.completed_steps.append("synthesis")
+        # --------------------------------
+        # 6. Temporary synthesis
+        # --------------------------------
+
+        state.final_answer = (
+            self._synthesize(
+                state
+            )
+        )
+
+        state.completed_steps.append(
+            "synthesis"
+        )
 
         return state
 
     def _synthesize(
         self,
         state: AgentState,
-        score: float
     ) -> str:
 
         if not state.evidence:
+
             return (
                 "Insufficient evidence "
                 "was retrieved."
@@ -100,7 +196,6 @@ class BiomedicalAgent:
         )
 
         return (
-            f"Evidence summary: {claims} "
-            f"Mean evidence score: "
-            f"{score:.2f}."
+            "Evidence summary: "
+            f"{claims}"
         )

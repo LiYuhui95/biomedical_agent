@@ -15,16 +15,17 @@ def test_agent_run():
             indent=2
         )
     )
+    
+    for item in result.reasoning_trace:
+        print(item)
 
     assert result.question != ""
 
-    assert len(
-        result.papers
-    ) > 0
+    assert len(result.papers) > 0
 
-    assert len(
-        result.evidence
-    ) > 0
+    assert len(result.evidence) > 0
+
+    assert len(result.evidence) <= 5
 
     assert (
         "query_rewrite"

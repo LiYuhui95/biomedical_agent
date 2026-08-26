@@ -5,10 +5,12 @@ from agent.llm import LLMBackend, OllamaBackend
 from agent.extractor import extract_evidence
 from agent.query import rewrite_query
 from agent.tools import execute_tool
+from retrieval.ranker import SemanticRanker
 
 class BiomedicalAgent:
     def __init__(self, llm: LLMBackend | None = None):
         self.llm = llm or OllamaBackend()
+        self.ranker = SemanticRanker()
 
     def run(
         self,
@@ -135,14 +137,26 @@ class BiomedicalAgent:
         state.completed_steps.append(
             "retrieval"
         )
-
+        # --------------------------------
+        # 4.5. Ranker
+        # --------------------------------
+        ranked_papers = self.ranker.rank(
+            question=question,
+            papers=papers,
+            top_k=5,
+        )
+        for paper, score in ranked_papers:
+            state.reasoning_trace.append(
+                f"Ranked PMID {paper.pmid} "
+                f"with similarity {score:.4f}"
+            )
         # --------------------------------
         # 5. Evidence extraction
         # --------------------------------
 
         evidence = []
 
-        for paper in papers:
+        for paper, _ in ranked_papers:
 
             if not paper.abstract:
                 continue

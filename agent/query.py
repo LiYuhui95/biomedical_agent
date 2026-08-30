@@ -31,6 +31,41 @@ def _regex_fallback(question: str) -> str:
 def _is_placeholder(term: str) -> bool:
     return bool(_PLACEHOLDER_PATTERN.search(term))
 
+def extract_required_entities(
+    question: str,
+) -> list[str]:
+    return re.findall(
+        r"\b[A-Z][A-Z0-9-]{2,}\b",
+        question,
+    )
+
+def ensure_required_entities(
+    question: str,
+    search_query: str,
+) -> str:
+    required_entities = extract_required_entities(
+        question
+    )
+
+    missing_entities = [
+        entity
+        for entity in required_entities
+        if entity.lower()
+        not in search_query.lower()
+    ]
+
+    if not missing_entities:
+        return search_query
+
+    entity_prefix = " AND ".join(
+        missing_entities
+    )
+
+    return (
+        f"{entity_prefix} AND "
+        f"({search_query})"
+    )
+
 def rewrite_query(llm: LLMBackend, question: str) -> str:
     """
     Extract real biomedical terms from a question and combine
@@ -92,12 +127,23 @@ Research question:
 
     terms = [t for t in terms if not _is_placeholder(t)]
 
-    print(
-        f"DEBUG rewrite_query terms={terms} "
-        f"used_fallback={used_fallback}"
+    if not terms:
+        search_query = ""
+    else:
+        search_query = " AND ".join(
+            terms
+        )
+
+    search_query = ensure_required_entities(
+        question=question,
+        search_query=search_query,
     )
 
-    if not terms:
-        return ""
+    print(
+        f"DEBUG rewrite_query "
+        f"terms={terms} "
+        f"used_fallback={used_fallback} "
+        f"final_query={search_query!r}"
+    )
 
-    return " AND ".join(terms)
+    return search_query

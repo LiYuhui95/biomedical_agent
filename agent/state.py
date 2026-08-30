@@ -1,5 +1,17 @@
 from typing import Any, List
 from pydantic import BaseModel, Field
+from enum import Enum
+
+class AgentAction(BaseModel):
+    action: str
+    arguments: dict[str, Any]
+
+class WorkflowAction(str, Enum):
+    SEARCH = "search"
+    FETCH_MORE = "fetch_more"
+    REFINE_QUERY = "refine_query"
+    SYNTHESIZE = "synthesize"
+    STOP_INSUFFICIENT = "stop_insufficient"
 
 class Evidence(BaseModel):
     pmid: str
@@ -23,8 +35,9 @@ class PaperRecord(BaseModel):
 
 class ScientificEvidence(BaseModel):
     pmid: str
-    claim: str
-    evidence_type: str
+    claim: str | None = None
+    evidence_type: str = 'unclear'
+    is_relevant: bool = False
     model_system: str | None = None
     intervention: str | None = None
     outcome: str | None = None
@@ -33,17 +46,6 @@ class ScientificEvidence(BaseModel):
         default_factory=list
     )
 
-
-class AgentAction(BaseModel):
-    """
-    The next action that the LLM wants the agent to take.
-    """
-
-    action: str
-
-    arguments: dict[str, Any] = Field(
-        default_factory=dict
-    )
 
 class ToolResult(BaseModel):
     """
@@ -63,6 +65,16 @@ class AgentState(BaseModel):
     """
     Shared working memory of the agent.
     """
+
+    iteration: int = 0
+    max_iterations: int = 3
+
+    retrieved_count: int = 0
+    usable_evidence_count: int = 0
+    relevance_rate: float = 0.0
+
+    next_action: WorkflowAction = WorkflowAction.SEARCH
+    termination_reason: str | None = None
 
     question: str
 

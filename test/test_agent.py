@@ -15,6 +15,8 @@ def test_agent_run():
             indent=2
         )
     )
+
+    print(result)
     
     for item in result.reasoning_trace:
         print(item)
@@ -41,3 +43,9 @@ def test_agent_run():
         "extraction"
         in result.completed_steps
     )
+
+    assert result.final_answer is not None
+
+    assert result.final_answer.strip() != ""
+
+    assert "PMID:" in result.final_answer

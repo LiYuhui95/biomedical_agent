@@ -1,11 +1,13 @@
 from agent.state import AgentState, AgentAction, ToolResult
-from agent.planner import create_plan
+from agent.evaluator import evaluate_evidence_state
+from agent.planner import create_plan, choose_next_action
 from tools.pubmed import fetch_paper, search_pubmed
 from agent.llm import LLMBackend, OllamaBackend
 from agent.extractor import extract_evidence
 from agent.query import rewrite_query
 from agent.tools import execute_tool
 from retrieval.ranker import SemanticRanker
+from agent.synthesizer import synthesize_answer
 
 class BiomedicalAgent:
     def __init__(self, llm: LLMBackend | None = None):
@@ -175,15 +177,52 @@ class BiomedicalAgent:
         state.completed_steps.append(
             "extraction"
         )
+        # --------------------------------
+        # 6. Evidence evaluation
+        # --------------------------------
+
+        evaluate_evidence_state(
+            state=state,
+            retrieved_count=len(ranked_papers),
+        )
+
+        state.next_action = choose_next_action(
+            state
+        )
+
+        print(
+            "Workflow decision:",
+            state.next_action,
+        )
+
+        print(
+            "Retrieved:",
+            state.retrieved_count,
+        )
+
+        print(
+            "Extracted evidence:",
+            len(state.evidence),
+        )
+
+        print(
+            "Usable evidence:",
+            state.usable_evidence_count,
+        )
+
+        print(
+            "Relevance rate:",
+            state.relevance_rate,
+        )
 
         # --------------------------------
-        # 6. Temporary synthesis
+        # 7. Temporary synthesis
         # --------------------------------
 
-        state.final_answer = (
-            self._synthesize(
-                state
-            )
+        state.final_answer = synthesize_answer(
+            llm=self.llm,
+            question=state.question,
+            evidence=state.evidence,
         )
 
         state.completed_steps.append(
@@ -191,25 +230,3 @@ class BiomedicalAgent:
         )
 
         return state
-
-    def _synthesize(
-        self,
-        state: AgentState,
-    ) -> str:
-
-        if not state.evidence:
-
-            return (
-                "Insufficient evidence "
-                "was retrieved."
-            )
-
-        claims = " ".join(
-            item.claim
-            for item in state.evidence
-        )
-
-        return (
-            "Evidence summary: "
-            f"{claims}"
-        )

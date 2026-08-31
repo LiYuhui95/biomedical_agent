@@ -14,6 +14,7 @@ def evaluate_evidence_state(
 
     relevant_count = sum(
         item.is_relevant
+        and bool(item.claim)
         for item in state.evidence
     )
 

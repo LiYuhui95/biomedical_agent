@@ -61,6 +61,9 @@ def ensure_required_entities(
         missing_entities
     )
 
+    if not search_query:
+        return entity_prefix
+
     return (
         f"{entity_prefix} AND "
         f"({search_query})"
@@ -147,3 +150,52 @@ Research question:
     )
 
     return search_query
+
+def refine_query(
+    llm: LLMBackend,
+    question: str,
+    previous_query: str,
+) -> str:
+    prompt = f"""
+You are refining a PubMed search query because the previous
+query retrieved insufficient or mostly irrelevant evidence.
+
+Research question:
+{question}
+
+Previous PubMed query:
+{previous_query}
+
+Generate a more precise PubMed query.
+
+Requirements:
+- Preserve every explicit gene, protein, drug, or target
+  named in the research question.
+- Keep the disease or biological condition.
+- Add useful synonyms or PubMed field qualifiers when helpful.
+- Do not invent entities.
+- Return JSON only in this format:
+  {{"query": "refined PubMed query"}}
+"""
+
+    try:
+        raw = llm.generate(
+            prompt,
+            json_mode=True,
+        )
+
+        data = json.loads(raw)
+        refined_query = str(
+            data.get("query", "")
+        ).strip()
+
+    except Exception:
+        refined_query = ""
+
+    if not refined_query:
+        refined_query = previous_query
+
+    return ensure_required_entities(
+        question=question,
+        search_query=refined_query,
+    )

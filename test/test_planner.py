@@ -1,5 +1,5 @@
 from agent.planner import choose_next_action
-from agent.state import AgentAction, AgentState
+from agent.state import WorkflowAction, AgentState
 
 
 def make_state(**updates) -> AgentState:
@@ -21,7 +21,7 @@ def test_refines_query_when_nothing_retrieved():
 
     assert (
         choose_next_action(state)
-        == AgentAction.REFINE_QUERY
+        == WorkflowAction.REFINE_QUERY
     )
 
 
@@ -35,7 +35,7 @@ def test_refines_query_when_relevance_is_low():
 
     assert (
         choose_next_action(state)
-        == AgentAction.REFINE_QUERY
+        == WorkflowAction.REFINE_QUERY
     )
 
 
@@ -49,7 +49,7 @@ def test_fetches_more_when_evidence_is_insufficient():
 
     assert (
         choose_next_action(state)
-        == AgentAction.FETCH_MORE
+        == WorkflowAction.FETCH_MORE
     )
 
 
@@ -63,7 +63,7 @@ def test_synthesizes_when_evidence_is_sufficient():
 
     assert (
         choose_next_action(state)
-        == AgentAction.SYNTHESIZE
+        == WorkflowAction.SYNTHESIZE
     )
 
 
@@ -77,5 +77,5 @@ def test_stops_after_budget_exhaustion():
 
     assert (
         choose_next_action(state)
-        == AgentAction.STOP_INSUFFICIENT
+        == WorkflowAction.STOP_INSUFFICIENT
     )

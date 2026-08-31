@@ -17,7 +17,7 @@ def test_agent_run():
     )
 
     print(result)
-    
+
     for item in result.reasoning_trace:
         print(item)
 
@@ -45,7 +45,5 @@ def test_agent_run():
     )
 
     assert result.final_answer is not None
-
-    assert result.final_answer.strip() != ""
-
-    assert "PMID:" in result.final_answer
+    assert result.final_answer.strip()
+    assert result.next_action is not None

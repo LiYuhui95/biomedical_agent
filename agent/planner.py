@@ -1,14 +1,13 @@
-from agent.state import AgentAction, AgentState, WorkflowAction
+from agent.state import  AgentState, WorkflowAction
 
 
 def create_plan(
-    state: AgentState
-) -> AgentAction:
-
+    state: AgentState,
+) -> list[str]:
     return [
         "retrieve_evidence",
         "evaluate_evidence",
-        "synthesize_answer"
+        "synthesize_answer",
     ]
 
 

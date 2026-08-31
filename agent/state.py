@@ -78,6 +78,12 @@ class AgentState(BaseModel):
 
     question: str
 
+    citation_valid: bool | None = None
+
+    invalid_citations: list[str] = Field(
+        default_factory=list
+    )
+
     plan: list[str] = Field(
         default_factory=list
     )

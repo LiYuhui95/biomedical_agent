@@ -7,6 +7,7 @@ from agent.query import rewrite_query, refine_query
 from agent.tools import execute_tool
 from retrieval.ranker import SemanticRanker
 from agent.synthesizer import synthesize_answer
+from agent.validator import extract_cited_pmids, find_invalid_citations
 
 class BiomedicalAgent:
     def __init__(
@@ -232,7 +233,7 @@ class BiomedicalAgent:
                 state.next_action
                 == WorkflowAction.SYNTHESIZE
             ):
-                state.final_answer = (
+                answer = (
                     synthesize_answer(
                         llm=self.llm,
                         question=state.question,
@@ -240,6 +241,44 @@ class BiomedicalAgent:
                     )
                 )
 
+                cited_pmids = extract_cited_pmids(
+                    answer
+                )
+
+                invalid_citations = find_invalid_citations(
+                    answer=answer,
+                    evidence=state.evidence,
+                )
+
+                state.invalid_citations = sorted(
+                    invalid_citations
+                )
+
+                state.citation_valid = (
+                    bool(cited_pmids)
+                    and not invalid_citations
+                )
+
+                if state.citation_valid:
+                    state.final_answer = answer
+                else:
+                    state.final_answer = (
+                        "The generated answer failed "
+                        "citation validation."
+                    )
+
+                    if not cited_pmids:
+                        state.termination_reason = (
+                            "The synthesized answer contained "
+                            "no PMID citations."
+                        )
+                    else:
+                        state.termination_reason = (
+                            "The synthesized answer cited "
+                            "PMIDs not present in the "
+                            "validated evidence."
+                        )
+                        
                 state.completed_steps.append(
                     "synthesis"
                 )

@@ -55,6 +55,22 @@ The deterministic planner selects one of four workflow actions:
 
 The workflow is bounded by `max_iterations` to control latency, model calls, external requests, and failure propagation.
 
+## LangChain and LangGraph Examples
+
+The `examples/` directory contains incremental LangChain and LangGraph implementations:
+
+- `langchain_basics.py`: Ollama integration and structured LLM output
+- `langchain_tool_demo.py`: PubMed retrieval exposed as a LangChain tool
+- `langchain_agent_demo.py`: LangChain model-tool agent loop
+- `langgraph_basics.py`: minimal state, node, edge, routing, and loop example
+- `biomedical_graph.py`: complete stateful biomedical evidence workflow using LangGraph
+
+Run the complete LangGraph workflow from the repository root:
+
+```bash
+python -m examples.biomedical_graph
+
+
 ## Project Structure
 
 ```text
@@ -91,6 +107,12 @@ biomedical_agent/
     ├── test_tool.py
     ├── test_validation.py
     └── test_validator.py
+├── examples/
+│   ├── biomedical_graph.py
+│   ├── langchain_agent_demo.py
+│   ├── langchain_basics.py
+│   ├── langchain_tool_demo.py
+│   └── langgraph_basics.py
 ```
 
 ## Core Data Models
@@ -250,7 +272,6 @@ The system combines probabilistic LLM components with deterministic safeguards:
 - Multi-query retrieval benchmark
 - Persistent agent state
 - Human review for uncertain or conflicting evidence
-- LangGraph-based workflow orchestration
 
 ## Disclaimer
 

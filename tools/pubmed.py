@@ -43,9 +43,7 @@ def search_pubmed(
 
     data = response.json()
 
-    return data[
-        "esearchresult"
-    ]["idlist"]
+    return data["esearchresult"]["idlist"]
 
 def parse_pubmed_xml(
     xml_text: str

@@ -47,6 +47,17 @@ Instructions:
 7. Do not invent facts not contained in the evidence.
 8. If the evidence is insufficient, explicitly say so.
 
+- Distinguish evidence reported directly by the current paper
+  from evidence merely discussed or cited by a review.
+- Do not describe a review, perspective, or commentary as a
+  clinical trial.
+- Clinical evidence is generally more direct than preclinical
+  evidence for evaluating therapeutic efficacy.
+- Do not repeat the limitations section.
+- Calibrate the conclusion to evidence strength. Use language
+  such as "preliminary", "promising but unconfirmed", or
+  "insufficient" when direct clinical evidence is limited.
+  
 Use this structure:
 
 Conclusion:

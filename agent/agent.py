@@ -1,5 +1,5 @@
 from agent.state import AgentState, AgentAction, WorkflowAction
-from agent.evaluator import evaluate_evidence_state
+from agent.evaluator import evaluate_evidence_state,  get_usable_evidence
 from agent.planner import create_plan, choose_next_action
 from agent.llm import LLMBackend, OllamaBackend
 from agent.extractor import extract_evidence
@@ -141,6 +141,7 @@ class BiomedicalAgent:
                 llm=self.llm,
                 question=state.question,
                 pmid=paper.pmid,
+                title=paper.title,
                 abstract=paper.abstract,
             )
 
@@ -233,11 +234,12 @@ class BiomedicalAgent:
                 state.next_action
                 == WorkflowAction.SYNTHESIZE
             ):
+                usable_evidence = get_usable_evidence(state.evidence)
                 answer = (
                     synthesize_answer(
                         llm=self.llm,
                         question=state.question,
-                        evidence=state.evidence,
+                        evidence=usable_evidence,
                     )
                 )
 
@@ -247,7 +249,7 @@ class BiomedicalAgent:
 
                 invalid_citations = find_invalid_citations(
                     answer=answer,
-                    evidence=state.evidence,
+                    evidence=usable_evidence,
                 )
 
                 state.invalid_citations = sorted(

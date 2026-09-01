@@ -3,11 +3,62 @@ import json
 from agent.llm import LLMBackend
 from agent.state import ScientificEvidence
 
+def normalize_evidence_type(
+    title: str,
+    abstract: str,
+    proposed_type: str,
+) -> str:
+    title_lower = title.lower()
+    text_lower = (
+        f"{title} {abstract}"
+    ).lower()
+
+    if "patent review" in title_lower:
+        return "review"
+
+    if "review" in title_lower:
+        return "review"
+
+    if "perspective" in title_lower:
+        return "commentary"
+
+    if "letter to editor" in title_lower:
+        return "commentary"
+
+    if (
+        "randomized" in text_lower
+        or "phase 2" in title_lower
+        or "phase ii" in title_lower
+    ):
+        return "clinical_trial"
+
+    if (
+        "virtual screening" in title_lower
+        or "molecular docking" in title_lower
+    ):
+        return "computational"
+
+    valid_types = {
+        "clinical_trial",
+        "observational",
+        "animal",
+        "in_vitro",
+        "computational",
+        "review",
+        "commentary",
+        "unclear",
+    }
+
+    if proposed_type in valid_types:
+        return proposed_type
+
+    return "unclear"
 
 def extract_evidence(
     llm: LLMBackend,
     question: str,
     pmid: str,
+    title: str,
     abstract: str,
 ) -> ScientificEvidence:
 
@@ -19,6 +70,9 @@ Research question:
 
 Paper PMID:
 {pmid}
+
+Paper title:
+{title}
 
 Paper abstract:
 {abstract}
@@ -48,6 +102,24 @@ Required schema:
   "supports_question": true,
   "limitations": ["string", "string"]
 }}
+
+"evidence_type" must be exactly one of:
+
+- "clinical_trial": the current paper reports original
+  interventional human trial results.
+- "observational": the current paper reports original
+  observational human data.
+- "animal": the current paper reports in vivo animal evidence.
+- "in_vitro": the current paper reports cellular or
+  biochemical experimental evidence.
+- "computational": the current paper primarily reports
+  modeling, docking, or virtual screening.
+- "review": the current paper summarizes other studies.
+- "commentary": letter, editorial, or perspective.
+- "unclear": insufficient information.
+
+Do not label a review, perspective, patent review, or paper
+that merely mentions a clinical trial as "clinical_trial".
 
 Important:
 - is_relevant indicates whether the paper helps answer the research question.
@@ -102,6 +174,17 @@ Important:
     if not data["is_relevant"]:
         data["claim"] = None
         data["supports_question"] = None
+
+    data["evidence_type"] = (
+        normalize_evidence_type(
+            title=title,
+            abstract=abstract,
+            proposed_type=data.get(
+                "evidence_type",
+                "unclear",
+            ),
+        )
+    )
 
     return ScientificEvidence(
         pmid=pmid,

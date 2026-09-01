@@ -22,6 +22,43 @@ def get_usable_evidence(
         if is_usable_evidence(item)
     ]
 
+from agent.state import (
+    AgentState,
+    ScientificEvidence,
+)
+
+
+def evaluate_evidence(
+    evidence: list[ScientificEvidence],
+    retrieved_count: int,
+) -> dict[str, int | float]:
+    """
+    Deterministically evaluate extracted evidence.
+
+    This function does not mutate any state.
+    It can be reused by both the original agent
+    and the LangGraph implementation.
+    """
+
+    usable_evidence_count = sum(
+        item.is_relevant
+        and bool(item.claim)
+        for item in evidence
+    )
+
+    relevance_rate = (
+        usable_evidence_count / len(evidence)
+        if evidence
+        else 0.0
+    )
+
+    return {
+        "retrieved_count": retrieved_count,
+        "usable_evidence_count": (
+            usable_evidence_count
+        ),
+        "relevance_rate": relevance_rate,
+    }
 
 def evaluate_evidence_state(
     state: AgentState,

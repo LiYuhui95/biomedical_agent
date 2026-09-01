@@ -3,6 +3,10 @@ import re
 
 from agent.llm import LLMBackend
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 _PLACEHOLDER_PATTERN = re.compile(
     r"\b(compound|target|drug|gene|protein|disease)\s+[A-Z]\b"
@@ -142,11 +146,13 @@ Research question:
         search_query=search_query,
     )
 
-    print(
-        f"DEBUG rewrite_query "
-        f"terms={terms} "
-        f"used_fallback={used_fallback} "
-        f"final_query={search_query!r}"
+    logger.debug(
+        "rewrite_query terms=%s "
+        "used_fallback=%s "
+        "final_query=%r",
+        terms,
+        used_fallback,
+        search_query,
     )
 
     return search_query
